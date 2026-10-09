@@ -1,5 +1,5 @@
 /**
- * workout-data.js - Персональная программа тренировок
+ * workout-data.js - Персональная программа тренировок с фотографиями оборудования
  * Включает полную конфигурацию блоков, упражнений, подходов и вариантов
  */
 
@@ -19,6 +19,7 @@ const WORKOUT_PROGRAM = {
         id: 'treadmill_matrix',
         title: 'Беговая дорожка Matrix Endurance',
         machine: 'Matrix Endurance Series',
+        image: 'assets/exercises/treadmill_matrix.jpg',
         targetTimeSec: 600, // 10 минут
         targetDistanceKm: 1.0,
         targetSpeedKmh: 6.2,
@@ -38,6 +39,7 @@ const WORKOUT_PROGRAM = {
           id: 'bench_press_technogym',
           title: 'Жим штанги лёжа',
           machine: 'Скамья Technogym Olympic Bench',
+          image: 'assets/exercises/bench_press_technogym.jpg',
           targetRestSec: 180,
           restPresets: [120, 150, 180, 210],
           notes: 'Пирамида. В 3 и 4 подходах используй страхующего или стопоры.',
@@ -52,6 +54,7 @@ const WORKOUT_PROGRAM = {
           id: 'lat_pulldown_matrix',
           title: 'Вертикальная тяга в кроссовере',
           machine: 'Кроссовер Matrix Versa / Ultra',
+          image: 'assets/exercises/lat_pulldown_matrix.jpg',
           targetRestSec: 90,
           restPresets: [60, 90, 120],
           notes: 'Лесенка с повышением веса. Лопатки сведены, тяга к ключицам.',
@@ -66,6 +69,7 @@ const WORKOUT_PROGRAM = {
           id: 'chest_press_matrix',
           title: 'Жим от груди в тренажере',
           machine: 'Matrix Chest Press (стек)',
+          image: 'assets/exercises/chest_press_matrix.jpg',
           targetRestSec: 90,
           restPresets: [60, 90, 120],
           notes: 'Фиксированный рабочий вес 76 кг. Контроль в негативной фазе 2 сек.',
@@ -86,19 +90,22 @@ const WORKOUT_PROGRAM = {
               id: 'variant_a',
               label: 'Вариант A (Подвижные рукояти)',
               title: 'Горизонтальная тяга с подвижными рукоятями',
-              machine: 'Matrix Converging Seated Row'
+              machine: 'Matrix Converging Seated Row',
+              image: 'assets/exercises/row_variant_a.jpg'
             },
             {
               id: 'variant_b',
               label: 'Вариант B (Тросовая к поясу)',
               title: 'Горизонтальная тяга — тросовая к поясу',
-              machine: 'Technogym Low Row Cable'
+              machine: 'Technogym Low Row Cable',
+              image: 'assets/exercises/row_variant_b.jpg'
             },
             {
               id: 'variant_c',
               label: 'Вариант C (Упор в грудь)',
               title: 'Горизонтальная тяга с упором в грудь',
-              machine: 'Matrix Chest Supported Row'
+              machine: 'Matrix Chest Supported Row',
+              image: 'assets/exercises/row_variant_c.jpg'
             }
           ],
           targetRestSec: 90,
@@ -131,6 +138,7 @@ const WORKOUT_PROGRAM = {
               id: 'squat_foreman',
               title: 'Присед со штангой на спине',
               machine: 'Силовая рама Foreman',
+              image: 'assets/exercises/squat_foreman.jpg',
               targetRestSec: 180,
               restPresets: [120, 150, 180, 240],
               notes: 'Пирамида. Глубина — бедро параллельно полу. Контроль коленей и поясницы.',
@@ -152,6 +160,7 @@ const WORKOUT_PROGRAM = {
               id: 'leg_extension_matrix',
               title: 'Разгибание голени сидя',
               machine: 'Matrix Leg Extension (квадрицепс)',
+              image: 'assets/exercises/leg_extension_matrix.jpg',
               targetRestSec: 90,
               restPresets: [60, 90, 120],
               notes: 'Пирамида до 105 кг. Фиксация в верхней точке на 1 секунду.',
@@ -166,6 +175,7 @@ const WORKOUT_PROGRAM = {
               id: 'leg_curl_technogym',
               title: 'Сгибание голени сидя',
               machine: 'Technogym Seated Leg Curl (бицепс бедра)',
+              image: 'assets/exercises/leg_curl_technogym.jpg',
               targetRestSec: 90,
               restPresets: [60, 90, 120],
               notes: 'Плавный темп. Прогрессия до 56 кг в финальном подходе.',
@@ -192,6 +202,7 @@ const WORKOUT_PROGRAM = {
           id: 'ab_crunch_panatta',
           title: 'Скручивания на пресс',
           machine: 'Тренажер Panatta Circular Crunch / Abdominal',
+          image: 'assets/exercises/ab_crunch_panatta.jpg',
           targetRestSec: 60,
           restPresets: [45, 60, 90],
           notes: '4 подхода по 10–12 повторений с отягощением +30 кг. Мощный выдох на пиковом сокращении.',

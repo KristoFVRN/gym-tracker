@@ -88,6 +88,12 @@ function createWarmupCard(block) {
     </div>
 
     <div class="exercise-item warmup-exercise ${isDone ? 'is-completed' : ''}">
+      ${item.image ? `
+      <div class="exercise-photo-wrapper">
+        <img src="${item.image}" alt="${item.title}" class="exercise-photo" loading="lazy" />
+        <span class="exercise-photo-badge">📍 ${item.machine}</span>
+      </div>` : ''}
+
       <div class="exercise-top">
         <div>
           <h3 class="exercise-title">${item.title}</h3>
@@ -274,14 +280,24 @@ function createExerciseElement(exercise) {
     `;
   }
 
-  // Определение названия текущего оборудования
+  // Определение названия текущего оборудования и изображения
   let activeMachine = exercise.machine;
+  let activeImage = exercise.image;
   if (exercise.hasVariants) {
     const selV = exercise.variants.find(v => v.id === exercise.selectedVariant);
-    if (selV) activeMachine = selV.machine;
+    if (selV) {
+      activeMachine = selV.machine;
+      if (selV.image) activeImage = selV.image;
+    }
   }
 
   item.innerHTML = `
+    ${activeImage ? `
+    <div class="exercise-photo-wrapper">
+      <img src="${activeImage}" alt="${exercise.title}" class="exercise-photo" id="photo_${exercise.id}" loading="lazy" />
+      <span class="exercise-photo-badge" id="photoBadge_${exercise.id}">📍 ${activeMachine}</span>
+    </div>` : ''}
+
     <div class="exercise-top">
       <div>
         <h3 class="exercise-title">${exercise.title}</h3>
@@ -327,11 +343,15 @@ function createExerciseElement(exercise) {
         item.querySelectorAll('.variant-pill-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        // Обновляем тег тренажера
+        // Обновляем тег тренажера и фото
         const found = exercise.variants.find(v => v.id === variantId);
         if (found) {
           const machTag = item.querySelector(`#machine_${exercise.id}`);
           if (machTag) machTag.textContent = `📍 ${found.machine}`;
+          const photoImg = item.querySelector(`#photo_${exercise.id}`);
+          if (photoImg && found.image) photoImg.src = found.image;
+          const photoBadge = item.querySelector(`#photoBadge_${exercise.id}`);
+          if (photoBadge) photoBadge.textContent = `📍 ${found.machine}`;
         }
       });
     });
@@ -511,6 +531,9 @@ function bindGlobalModals() {
 
       if (result.success && result.method === 'tg_sendData') {
         alert('Данные успешно переданы в Telegram бот!');
+        setTimeout(() => {
+          window.TelegramBridge.closeApp();
+        }, 300);
       } else {
         alert('Отчет подготовлен! (В браузере вне Telegram WebApp данные скопированы в буфер обмена).');
         navigator.clipboard?.writeText(JSON.stringify(payload, null, 2));
