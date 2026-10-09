@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Силовой Трекер | DDX & Matrix Workout</title>
+
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Цветовое оформление мобильного браузера под темную тему -->
+  <meta name="theme-color" content="#0d0f12" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Стили -->
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/components.css" />
+</head>
+<body>
+
+  <!-- ======================================================================
+       Фиксированная шапка приложения (Header)
+       ====================================================================== -->
+  <header class="app-header">
+    <div class="header-top-row">
+      <div class="brand-badge">
+        <span class="brand-dot"></span>
+        <span class="brand-name">Gym Pro Tracker</span>
+      </div>
+      <div class="user-name-tag" id="headerUserName">Атлет</div>
+    </div>
+
+    <div class="header-metrics-bar">
+      <div class="metric-item">
+        <span class="metric-label">Время</span>
+        <span class="metric-value" id="headerElapsedTime">00:00</span>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <span class="metric-label">Тоннаж</span>
+        <span class="metric-value highlight" id="headerTonnage">0 кг</span>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <span class="metric-label">Сеты</span>
+        <span class="metric-value" id="headerCompletedSets">0/0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================================================================
+       Контейнер тренировочных блоков
+       ====================================================================== -->
+  <main class="main-content" id="blocksContainer">
+    <!-- Блоки программы (1. Разминка, 2. Верх тела, 3. Низ тела, 4. Пресс) генерируются в app.js -->
+  </main>
+
+  <!-- ======================================================================
+       Плавающий бар таймера отдыха (Свернутое состояние)
+       ====================================================================== -->
+  <div class="floating-timer-bar" id="floatingTimerBar">
+    <div class="floating-timer-left">
+      <span class="floating-timer-pulse"></span>
+      <span class="floating-timer-title">Отдых идет...</span>
+    </div>
+    <div class="floating-timer-time" id="floatingTimerTime">01:30</div>
+  </div>
+
+  <!-- ======================================================================
+       Фиксированный нижний футер с кнопкой финиша
+       ====================================================================== -->
+  <footer class="app-footer">
+    <button type="button" class="btn btn-primary btn-finish-workout" id="finishWorkoutBtn">
+      🏁 Завершить тренировку
+    </button>
+  </footer>
+
+  <!-- ======================================================================
+       Модальное окно таймера отдыха (Развернутое состояние / Bottom Sheet)
+       ====================================================================== -->
+  <div class="modal-overlay" id="restTimerModal">
+    <div class="modal-sheet">
+      <div class="sheet-handle-bar"></div>
+      <div class="timer-exercise-name" id="timerExerciseLabel">Отдых между подходами</div>
+
+      <!-- Круговой индикатор таймера -->
+      <div class="circular-timer-container">
+        <svg class="timer-svg" viewBox="0 0 180 180">
+          <circle class="timer-circle-bg" cx="90" cy="90" r="80" stroke-width="8" fill="none" />
+          <circle class="timer-circle-progress" id="timerProgressCircle" cx="90" cy="90" r="80" stroke-width="8" fill="none" stroke-linecap="round" />
+        </svg>
+        <div class="timer-digits-center">
+          <span class="timer-digits" id="timerSecondsText">01:30</span>
+          <span class="timer-sublabel">Отдых</span>
+        </div>
+      </div>
+
+      <!-- Пресеты времени -->
+      <div class="timer-presets-row">
+        <button type="button" class="preset-chip-btn" data-timer-preset="60">60с</button>
+        <button type="button" class="preset-chip-btn" data-timer-preset="90">90с</button>
+        <button type="button" class="preset-chip-btn" data-timer-preset="120">120с</button>
+        <button type="button" class="preset-chip-btn" data-timer-preset="180">180с</button>
+      </div>
+
+      <!-- Кнопки управления -->
+      <div class="timer-action-buttons">
+        <button type="button" class="btn btn-secondary" id="timerAdd30Btn">+30 сек</button>
+        <button type="button" class="btn btn-secondary" id="timerTogglePauseBtn">Пауза</button>
+        <button type="button" class="btn btn-primary" id="timerCloseBtn">Готово</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       Модальное окно результатов тренировки и отправки в бот
+       ====================================================================== -->
+  <div class="modal-overlay" id="finishModal">
+    <div class="finish-modal-content">
+      <div class="modal-header-row">
+        <h3 class="modal-title">🏆 Итоги тренировки</h3>
+        <button type="button" class="btn-close-x" id="finishModalClose">✕</button>
+      </div>
+
+      <div class="summary-stats-grid">
+        <div class="summary-stat-card">
+          <span class="summary-stat-label">Время в зале</span>
+          <span class="summary-stat-value" id="summaryDuration">0 мин</span>
+        </div>
+        <div class="summary-stat-card">
+          <span class="summary-stat-label">Общий тоннаж</span>
+          <span class="summary-stat-value" id="summaryTonnage">0 кг</span>
+        </div>
+        <div class="summary-stat-card">
+          <span class="summary-stat-label">Выполнено сетов</span>
+          <span class="summary-stat-value" id="summarySets">0 / 0</span>
+        </div>
+        <div class="summary-stat-card">
+          <span class="summary-stat-label">Разминка</span>
+          <span class="summary-stat-value" id="summaryWarmup">Выполнена</span>
+        </div>
+      </div>
+
+      <div class="report-preview-box" id="reportPreviewText">
+        <!-- Текстовая сводка отчета -->
+      </div>
+
+      <div class="modal-footer-actions">
+        <button type="button" class="btn btn-primary btn-send-bot" id="sendToBotBtn">
+          ✈️ Отправить отчет боту
+        </button>
+        <button type="button" class="btn btn-secondary btn-copy-report" id="copyReportBtn">
+          📋 Скопировать отчет
+        </button>
+        <button type="button" class="btn btn-reset-workout" id="resetWorkoutBtn">
+          🔄 Начать новую тренировку
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Скрипты приложения -->
+  <script src="js/tg-bridge.js"></script>
+  <script src="js/workout-data.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
