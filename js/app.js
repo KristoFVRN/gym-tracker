@@ -529,6 +529,11 @@ function bindGlobalModals() {
       const result = window.TelegramBridge.sendDataToBot(payload);
       window.TelegramBridge.hapticNotification('success');
 
+      // Сбрасываем тренировку для чистого нового сеанса
+      window.workoutState.resetState();
+      renderWorkoutApp();
+      updateHeaderStats();
+
       if (result.success && result.method === 'tg_sendData') {
         alert('Данные успешно переданы в Telegram бот!');
         setTimeout(() => {
@@ -537,6 +542,19 @@ function bindGlobalModals() {
       } else {
         alert('Отчет подготовлен! (В браузере вне Telegram WebApp данные скопированы в буфер обмена).');
         navigator.clipboard?.writeText(JSON.stringify(payload, null, 2));
+      }
+    });
+  }
+
+  // Кнопка сброса в шапке
+  const headerResetBtn = document.getElementById('headerResetBtn');
+  if (headerResetBtn) {
+    headerResetBtn.addEventListener('click', () => {
+      if (confirm('Сбросить все выполненные подходы и начать тренировку заново?')) {
+        window.workoutState.resetState();
+        renderWorkoutApp();
+        updateHeaderStats();
+        window.TelegramBridge.hapticNotification('success');
       }
     });
   }
