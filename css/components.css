@@ -447,34 +447,100 @@
   background: rgba(0, 230, 118, 0.04);
 }
 
-.warmup-targets-grid {
+.warmup-controls-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
-.target-chip {
+.warmup-control-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: 8px;
+  padding: 8px 4px;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
 }
 
-.chip-label {
+.warmup-control-card .control-label {
   font-size: 10px;
   color: var(--text-dim);
   text-transform: uppercase;
   font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
-.chip-value {
-  font-size: 13px;
+.warmup-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+}
+
+.warmup-stepper .btn-step-mini {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  width: 28px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.warmup-stepper .btn-step-mini:active {
+  background: var(--bg-card-hover);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+  transform: scale(0.95);
+}
+
+.warmup-stepper .stepper-value-wrap {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.warmup-stepper .stepper-input {
+  width: 100%;
+  max-width: 42px;
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--accent-primary);
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+  padding: 2px 0;
+  font-variant-numeric: tabular-nums;
+  border-radius: var(--radius-sm);
+}
+
+.warmup-stepper .stepper-input:focus {
+  border-color: var(--accent-primary);
+  background: rgba(255, 184, 0, 0.08);
+  outline: none;
+}
+
+.warmup-stepper .stepper-unit {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .warmup-timer-bar {
