@@ -127,6 +127,23 @@ class WorkoutStateManager {
     return null;
   }
 
+  // Управление разминкой (беговая дорожка)
+  setWarmupCompleted(completed) {
+    const warmupBlock = this.state.blocks.find(b => b.id === 'block_warmup');
+    if (warmupBlock && warmupBlock.item) {
+      warmupBlock.item.completed = !!completed;
+      this.saveState();
+    }
+  }
+
+  updateWarmupSettings(updates) {
+    const warmupBlock = this.state.blocks.find(b => b.id === 'block_warmup');
+    if (warmupBlock && warmupBlock.item) {
+      Object.assign(warmupBlock.item, updates);
+      this.saveState();
+    }
+  }
+
   // Переключение режима Дня А / Дня Б для ног
   setLegsMode(modeKey) {
     const legsBlock = this.state.blocks.find(b => b.id === 'block_lower');
@@ -303,7 +320,14 @@ class WorkoutStateManager {
 
     // Разминка
     const warmupBlock = this.state.blocks.find(b => b.id === 'block_warmup');
-    const warmupDone = warmupBlock && warmupBlock.item && warmupBlock.item.completed;
+    const warmupItem = warmupBlock ? warmupBlock.item : null;
+    const warmupDone = warmupItem && warmupItem.completed;
+    const warmupSummary = warmupItem ? {
+      completed: !!warmupItem.completed,
+      minutes: Math.round((warmupItem.targetTimeSec || 600) / 60),
+      distanceKm: parseFloat(warmupItem.targetDistanceKm) || 1.0,
+      speedKmh: parseFloat(warmupItem.targetSpeedKmh) || 6.2
+    } : null;
 
     // Сбор упражнений
     for (const block of this.state.blocks) {
@@ -364,6 +388,7 @@ class WorkoutStateManager {
       completedSetsCount,
       totalSetsCount,
       warmupDone,
+      warmupSummary,
       legsMode: this.state.blocks.find(b => b.id === 'block_lower')?.activeMode || 'day_a',
       exercises: completedExercisesList
     };
@@ -385,7 +410,17 @@ class WorkoutStateManager {
     text += `⏱ <b>Длительность:</b> ${summary.durationMinutes} мин\n`;
     text += `📊 <b>Тоннаж:</b> ${summary.totalVolumeKg.toLocaleString('ru-RU')} кг\n`;
     text += `✅ <b>Подходов выполнено:</b> ${summary.completedSetsCount} из ${summary.totalSetsCount}\n`;
-    text += `🏃 <b>Разминка (дорожка):</b> ${summary.warmupDone ? '10 мин / 1 км (Выполнена ✅)' : 'Пропущена ⚠️'}\n`;
+    
+    if (summary.warmupDone) {
+      const w = summary.warmupSummary || {};
+      const m = w.minutes || 10;
+      const d = w.distanceKm || 1.0;
+      const s = w.speedKmh || 6.2;
+      text += `🏃 <b>Разминка (дорожка):</b> ${m} мин / ${d} км (${s} км/ч) (Выполнена ✅)\n`;
+    } else {
+      text += `🏃 <b>Разминка (дорожка):</b> Пропущена ⚠️\n`;
+    }
+    
     text += `🦵 <b>Режим ног:</b> ${legsModeLabel}\n\n`;
     text += `📋 <b>Выполненные упражнения:</b>\n`;
 

@@ -373,12 +373,25 @@ class WarmupTimer {
   pause() {
     this.isRunning = false;
     if (this.startBtn) {
-      this.startBtn.textContent = 'Старт (10 мин)';
+      const mins = Math.round(this.totalSeconds / 60);
+      this.startBtn.textContent = `Старт (${mins} мин)`;
       this.startBtn.classList.remove('btn-active');
     }
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
+    }
+  }
+
+  setDuration(seconds) {
+    this.totalSeconds = Math.max(60, Math.round(seconds));
+    if (!this.isRunning) {
+      this.remainingSeconds = this.totalSeconds;
+      this.updateDisplay();
+      if (this.startBtn) {
+        const mins = Math.round(this.totalSeconds / 60);
+        this.startBtn.textContent = `Старт (${mins} мин)`;
+      }
     }
   }
 

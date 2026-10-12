@@ -74,6 +74,9 @@ function createWarmupCard(block) {
 
   const item = block.item;
   const isDone = item.completed;
+  const currentMinutes = Math.round((item.targetTimeSec || 600) / 60);
+  const currentDist = parseFloat(item.targetDistanceKm != null ? item.targetDistanceKm : 1.0);
+  const currentSpeed = parseFloat(item.targetSpeedKmh != null ? item.targetSpeedKmh : 6.2);
 
   card.innerHTML = `
     <div class="block-header">
@@ -101,25 +104,51 @@ function createWarmupCard(block) {
         </div>
       </div>
 
-      <div class="warmup-targets-grid">
-        <div class="target-chip">
-          <span class="chip-label">Время</span>
-          <span class="chip-value">10 мин</span>
+      <div class="warmup-controls-grid">
+        <!-- Время -->
+        <div class="warmup-control-card">
+          <span class="control-label">⏱ Время</span>
+          <div class="warmup-stepper">
+            <button type="button" class="btn-step-mini" id="btnWarmupTimeMinus" title="-1 мин">−1</button>
+            <div class="stepper-value-wrap">
+              <input type="number" id="warmupTimeInput" class="stepper-input" value="${currentMinutes}" min="1" max="60" step="1" />
+              <span class="stepper-unit">мин</span>
+            </div>
+            <button type="button" class="btn-step-mini" id="btnWarmupTimePlus" title="+1 мин">+1</button>
+          </div>
         </div>
-        <div class="target-chip">
-          <span class="chip-label">Дистанция</span>
-          <span class="chip-value">1.0 км</span>
+
+        <!-- Дистанция -->
+        <div class="warmup-control-card">
+          <span class="control-label">📏 Дистанция</span>
+          <div class="warmup-stepper">
+            <button type="button" class="btn-step-mini" id="btnWarmupDistMinus" title="-0.1 км">−0.1</button>
+            <div class="stepper-value-wrap">
+              <input type="number" id="warmupDistInput" class="stepper-input" value="${currentDist.toFixed(1)}" min="0.1" max="30" step="0.1" />
+              <span class="stepper-unit">км</span>
+            </div>
+            <button type="button" class="btn-step-mini" id="btnWarmupDistPlus" title="+0.1 км">+0.1</button>
+          </div>
         </div>
-        <div class="target-chip">
-          <span class="chip-label">Скорость</span>
-          <span class="chip-value">6.2 км/ч</span>
+
+        <!-- Скорость -->
+        <div class="warmup-control-card">
+          <span class="control-label">⚡ Скорость</span>
+          <div class="warmup-stepper">
+            <button type="button" class="btn-step-mini" id="btnWarmupSpeedMinus" title="-0.2 км/ч">−0.2</button>
+            <div class="stepper-value-wrap">
+              <input type="number" id="warmupSpeedInput" class="stepper-input" value="${currentSpeed.toFixed(1)}" min="1" max="25" step="0.2" />
+              <span class="stepper-unit">км/ч</span>
+            </div>
+            <button type="button" class="btn-step-mini" id="btnWarmupSpeedPlus" title="+0.2 км/ч">+0.2</button>
+          </div>
         </div>
       </div>
 
       <div class="warmup-timer-bar">
-        <div class="timer-display-digits" id="warmupTimerDisplay">10:00</div>
+        <div class="timer-display-digits" id="warmupTimerDisplay">${currentMinutes < 10 ? '0' : ''}${currentMinutes}:00</div>
         <div class="warmup-timer-actions">
-          <button type="button" class="btn btn-secondary btn-sm" id="warmupTimerToggle">Старт (10 мин)</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="warmupTimerToggle">Старт (${currentMinutes} мин)</button>
           <button type="button" class="btn btn-icon btn-sm" id="warmupTimerReset" title="Сбросить">↺</button>
         </div>
       </div>
@@ -133,6 +162,65 @@ function createWarmupCard(block) {
       <div class="exercise-notes">💡 ${item.notes}</div>
     </div>
   `;
+
+  // Обработчики интерактивных степперов
+  const timeInput = card.querySelector('#warmupTimeInput');
+  const distInput = card.querySelector('#warmupDistInput');
+  const speedInput = card.querySelector('#warmupSpeedInput');
+
+  const onTimeChange = (newMins) => {
+    const val = Math.max(1, Math.min(60, parseInt(newMins, 10) || 10));
+    timeInput.value = val;
+    window.workoutState.updateWarmupSettings({ targetTimeSec: val * 60 });
+    window.warmupTimer?.setDuration(val * 60);
+    window.TelegramBridge?.hapticImpact('light');
+  };
+
+  card.querySelector('#btnWarmupTimeMinus').addEventListener('click', () => {
+    onTimeChange((parseInt(timeInput.value, 10) || 10) - 1);
+  });
+  card.querySelector('#btnWarmupTimePlus').addEventListener('click', () => {
+    onTimeChange((parseInt(timeInput.value, 10) || 10) + 1);
+  });
+  timeInput.addEventListener('change', (e) => onTimeChange(e.target.value));
+
+  const onDistChange = (newDist) => {
+    const val = Math.max(0.1, Math.min(30, Math.round((parseFloat(newDist) || 1.0) * 10) / 10));
+    distInput.value = val.toFixed(1);
+    window.workoutState.updateWarmupSettings({ targetDistanceKm: val });
+    window.TelegramBridge?.hapticImpact('light');
+  };
+
+  card.querySelector('#btnWarmupDistMinus').addEventListener('click', () => {
+    onDistChange((parseFloat(distInput.value) || 1.0) - 0.1);
+  });
+  card.querySelector('#btnWarmupDistPlus').addEventListener('click', () => {
+    onDistChange((parseFloat(distInput.value) || 1.0) + 0.1);
+  });
+  distInput.addEventListener('change', (e) => onDistChange(e.target.value));
+
+  const onSpeedChange = (newSpeed) => {
+    const val = Math.max(1, Math.min(25, Math.round((parseFloat(newSpeed) || 6.2) * 10) / 10));
+    speedInput.value = val.toFixed(1);
+    window.workoutState.updateWarmupSettings({ targetSpeedKmh: val });
+    window.TelegramBridge?.hapticImpact('light');
+  };
+
+  card.querySelector('#btnWarmupSpeedMinus').addEventListener('click', () => {
+    onSpeedChange((parseFloat(speedInput.value) || 6.2) - 0.2);
+  });
+  card.querySelector('#btnWarmupSpeedPlus').addEventListener('click', () => {
+    onSpeedChange((parseFloat(speedInput.value) || 6.2) + 0.2);
+  });
+  speedInput.addEventListener('change', (e) => onSpeedChange(e.target.value));
+
+  // Инициализация таймера разминки
+  setTimeout(() => {
+    if (window.warmupTimer) {
+      window.warmupTimer.init();
+      window.warmupTimer.setDuration(currentMinutes * 60);
+    }
+  }, 0);
 
   // Обработчик чекбокса
   const checkbox = card.querySelector('#warmupCheckbox');
