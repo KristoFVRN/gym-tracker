@@ -4,6 +4,8 @@
 
 const STORAGE_KEY = 'tma_fitness_workout_state_v1';
 const TIMER_KEY = 'tma_fitness_start_time_v1';
+const LAST_SESSION_KEY = 'tma_fitness_last_session_v1';
+const PR_RECORDS_KEY = 'tma_fitness_personal_records_v1';
 
 class WorkoutStateManager {
   constructor() {
@@ -11,11 +13,25 @@ class WorkoutStateManager {
     this.sessionStartTime = null;
     this.stopwatchInterval = null;
     this.elapsedSeconds = 0;
+    this.lastSessionData = null;
+    this.personalRecords = {};
   }
 
   init() {
     this.loadState();
+    this.loadHistoryAndPRs();
     this.initStopwatch();
+  }
+
+  loadHistoryAndPRs() {
+    try {
+      const lastRaw = localStorage.getItem(LAST_SESSION_KEY);
+      this.lastSessionData = lastRaw ? JSON.parse(lastRaw) : null;
+      const prRaw = localStorage.getItem(PR_RECORDS_KEY);
+      this.personalRecords = prRaw ? JSON.parse(prRaw) : {};
+    } catch (e) {
+      console.warn('Failed to load history or PRs', e);
+    }
   }
 
   loadState() {
@@ -132,13 +148,150 @@ class WorkoutStateManager {
     }
   }
 
-  // Отметка разминки
-  setWarmupCompleted(completed) {
-    const warmupBlock = this.state.blocks.find(b => b.id === 'block_warmup');
-    if (warmupBlock && warmupBlock.item) {
-      warmupBlock.item.completed = Boolean(completed);
+  // Получение данных сета с прошлой тренировки
+  getPreviousSet(exerciseId, setNum) {
+    if (!this.lastSessionData || !this.lastSessionData.exercises) return null;
+    const exData = this.lastSessionData.exercises.find(e => e.id === exerciseId);
+    if (!exData || !exData.sets) return null;
+    return exData.sets.find(s => s.setNum === setNum) || null;
+  }
+
+  // Копирование весов прошлой тренировки в текущее упражнение
+  copyPreviousExerciseWeights(exerciseId) {
+    const exercise = this.findExercise(exerciseId);
+    if (!exercise || !exercise.sets) return false;
+
+    let modified = false;
+    exercise.sets.forEach(set => {
+      const prev = this.getPreviousSet(exerciseId, set.setNum);
+      if (prev && prev.weight) {
+        set.weight = prev.weight;
+        if (prev.reps) set.reps = prev.reps;
+        modified = true;
+      }
+    });
+
+    if (modified) {
       this.saveState();
     }
+    return modified;
+  }
+
+  // Расчет одноповторного максимума (1ПМ по формуле Эпли)
+  calculate1RM(weight, reps) {
+    const w = parseFloat(weight) || 0;
+    const r = parseInt(reps, 10) || 0;
+    if (w <= 0 || r <= 0) return 0;
+    if (r === 1) return w;
+    return Math.round(w * (1 + r / 30) * 10) / 10;
+  }
+
+  // Личный рекорд упражнения
+  getPersonalRecord(exerciseId) {
+    return this.personalRecords[exerciseId] || null;
+  }
+
+  // Проверка: является ли текущий подход новым личным рекордом (PR)
+  checkIsNewPR(exerciseId, weight, reps) {
+    const w = parseFloat(weight) || 0;
+    const r = parseInt(reps, 10) || 0;
+    if (w <= 0 || r <= 0) return { isPR: false };
+
+    const current1RM = this.calculate1RM(w, r);
+    const existing = this.personalRecords[exerciseId];
+
+    if (!existing) {
+      return { isPR: true, oneRM: current1RM, weight: w, reps: r };
+    }
+
+    if (current1RM > existing.oneRM || w > existing.maxWeight) {
+      return { isPR: true, oneRM: current1RM, weight: w, reps: r, prev1RM: existing.oneRM };
+    }
+
+    return { isPR: false, oneRM: current1RM };
+  }
+
+  // Сохранение завершенной тренировки в историю и обновление рекордов
+  saveCompletedSessionToHistory(summary) {
+    try {
+      const sessionData = {
+        date: summary.date,
+        timestamp: summary.timestamp,
+        totalVolumeKg: summary.totalVolumeKg,
+        durationMinutes: summary.durationMinutes,
+        exercises: []
+      };
+
+      for (const block of this.state.blocks) {
+        let exerciseList = [];
+        if (block.type === 'exercises') {
+          exerciseList = block.exercises;
+        } else if (block.type === 'conditional_legs') {
+          const active = block.modes[block.activeMode];
+          if (active && active.exercises) exerciseList = active.exercises;
+        }
+
+        for (const ex of exerciseList) {
+          const completedSets = ex.sets
+            .filter(s => s.completed)
+            .map(s => ({ setNum: s.setNum, weight: s.weight, reps: s.reps }));
+
+          if (completedSets.length > 0) {
+            sessionData.exercises.push({
+              id: ex.id,
+              title: ex.title,
+              sets: completedSets
+            });
+
+            // Обновление личных рекордов
+            completedSets.forEach(s => {
+              const oneRM = this.calculate1RM(s.weight, s.reps);
+              const currPR = this.personalRecords[ex.id];
+              if (!currPR || oneRM > currPR.oneRM || s.weight > currPR.maxWeight) {
+                this.personalRecords[ex.id] = {
+                  maxWeight: Math.max(s.weight, currPR ? currPR.maxWeight : 0),
+                  repsAtMax: s.reps,
+                  oneRM: Math.max(oneRM, currPR ? currPR.oneRM : 0),
+                  date: summary.date
+                };
+              }
+            });
+          }
+        }
+      }
+
+      this.lastSessionData = sessionData;
+      localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(sessionData));
+      localStorage.setItem(PR_RECORDS_KEY, JSON.stringify(this.personalRecords));
+    } catch (e) {
+      console.warn('Failed to save session to history', e);
+    }
+  }
+
+  // Калькулятор блинов на гриф (20 кг гриф по умолчанию)
+  calculatePlates(totalWeight, barWeight = 20) {
+    const weight = parseFloat(totalWeight) || 0;
+    if (weight <= barWeight) {
+      return { perSide: 0, plates: [], barWeight };
+    }
+
+    const neededPerSide = (weight - barWeight) / 2;
+    const availablePlates = [25, 20, 15, 10, 5, 2.5, 1.25];
+    const plates = [];
+    let rem = neededPerSide;
+
+    for (const plate of availablePlates) {
+      while (rem >= plate - 0.01) {
+        plates.push(plate);
+        rem -= plate;
+      }
+    }
+
+    return {
+      perSide: Math.round(neededPerSide * 10) / 10,
+      plates,
+      barWeight
+    };
   }
 
   // Подсчет метрик тренировки
@@ -189,6 +342,7 @@ class WorkoutStateManager {
             if (v) exTitle += ` (${v.label})`;
           }
           completedExercisesList.push({
+            id: ex.id,
             title: exTitle,
             machine: ex.machine,
             completedSets: exCompletedSets,

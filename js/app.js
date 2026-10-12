@@ -303,9 +303,18 @@ function createExerciseElement(exercise) {
         <h3 class="exercise-title">${exercise.title}</h3>
         <span class="machine-tag" id="machine_${exercise.id}">📍 ${activeMachine}</span>
       </div>
-      <button type="button" class="quick-timer-badge" data-quick-rest="${exercise.targetRestSec}" title="Запустить отдых">
-        ⏱ ${exercise.targetRestSec}с
-      </button>
+      <div class="exercise-top-actions">
+        ${exercise.isBarbell ? `
+        <button type="button" class="btn-top-chip btn-plates-calc" data-barbell-id="${exercise.id}" title="Калькулятор блинов">
+          🥞 Блины
+        </button>` : ''}
+        <button type="button" class="btn-top-chip btn-copy-prev" data-copy-ex="${exercise.id}" title="Взять веса прошлой тренировки">
+          📋 Прошлый
+        </button>
+        <button type="button" class="quick-timer-badge" data-quick-rest="${exercise.targetRestSec}" title="Запустить отдых">
+          ⏱ ${exercise.targetRestSec}с
+        </button>
+      </div>
     </div>
 
     ${variantSelectorHtml}
@@ -329,6 +338,39 @@ function createExerciseElement(exercise) {
     timerBadge.addEventListener('click', () => {
       window.restTimer.start(exercise.targetRestSec, exercise.title);
       window.TelegramBridge.hapticImpact('light');
+    });
+  }
+
+  // Копирование весов с прошлой тренировки
+  const copyPrevBtn = item.querySelector(`[data-copy-ex="${exercise.id}"]`);
+  if (copyPrevBtn) {
+    copyPrevBtn.addEventListener('click', () => {
+      const ok = window.workoutState.copyPreviousExerciseWeights(exercise.id);
+      if (ok) {
+        window.TelegramBridge.hapticNotification('success');
+        renderWorkoutApp();
+      } else {
+        alert('Для этого упражнения еще нет сохраненной прошлой тренировки.');
+      }
+    });
+  }
+
+  // Калькулятор блинов для штанги
+  const platesBtn = item.querySelector(`[data-barbell-id="${exercise.id}"]`);
+  if (platesBtn) {
+    platesBtn.addEventListener('click', () => {
+      const heavySet = exercise.sets.slice().reverse().find(s => s.weight > 20) || exercise.sets[0];
+      const calc = window.workoutState.calculatePlates(heavySet.weight);
+      let msg = `🏋️ Калькулятор блинов для веса ${heavySet.weight} кг:\n`;
+      msg += `• Гриф: ${calc.barWeight} кг\n`;
+      msg += `• На каждую сторону: ${calc.perSide} кг\n`;
+      if (calc.plates.length > 0) {
+        msg += `• Блины на сторону: ${calc.plates.map(p => `${p} кг`).join(' + ')}`;
+      } else {
+        msg += `• Пустой гриф без блинов`;
+      }
+      alert(msg);
+      window.TelegramBridge.hapticImpact('medium');
     });
   }
 
@@ -367,7 +409,7 @@ function createExerciseElement(exercise) {
 }
 
 /**
- * Отрисовка строки одного подхода со степперами и кнопкой "Готово"
+ * Отрисовка строки одного подхода со степперами, подсказкой прошлых весов и PR
  */
 function createSetRow(exercise, set) {
   const row = document.createElement('div');
@@ -380,17 +422,28 @@ function createSetRow(exercise, set) {
     heavy: 'Пик'
   };
 
+  const prevSet = window.workoutState.getPreviousSet(exercise.id, set.setNum);
+  const prevHintText = prevSet ? `${prevSet.weight}кг×${prevSet.reps}` : '';
+  const prCheck = window.workoutState.checkIsNewPR(exercise.id, set.weight, set.reps);
+  const oneRM = window.workoutState.calculate1RM(set.weight, set.reps);
+
   row.innerHTML = `
-    <!-- Номер сета -->
+    <!-- Номер сета и PR -->
     <div class="col-num set-number-badge">
-      <span class="set-index">${set.setNum}</span>
+      <div class="set-index-row">
+        <span class="set-index">${set.setNum}</span>
+        ${prCheck.isPR ? `<span class="pr-badge-mini" title="Новый личный рекорд! 1ПМ: ${oneRM}кг">PR🔥</span>` : ''}
+      </div>
       <span class="set-type-tag ${set.type}">${typeLabels[set.type] || ''}</span>
     </div>
 
-    <!-- Вес со степперами -->
+    <!-- Вес со степперами и подсказкой -->
     <div class="col-weight stepper-control">
       <button type="button" class="step-btn step-minus" data-step-weight="-2.5">−</button>
-      <input type="number" step="0.5" min="0" max="400" class="step-input weight-input" value="${set.weight}" />
+      <div class="stepper-center-box">
+        <input type="number" step="0.5" min="0" max="400" class="step-input weight-input" value="${set.weight}" />
+        <span class="set-hint-line">${prevHintText ? `пред: ${prevHintText}` : `1ПМ: ${oneRM}`}</span>
+      </div>
       <button type="button" class="step-btn step-plus" data-step-weight="+2.5">+</button>
     </div>
 
@@ -525,6 +578,9 @@ function bindGlobalModals() {
         summary,
         reportText: window.workoutState.formatReportText(summary)
       };
+
+      // Сохраняем сессию в локальную историю и обновляем рекорды (PR)
+      window.workoutState.saveCompletedSessionToHistory(summary);
 
       const result = window.TelegramBridge.sendDataToBot(payload);
       window.TelegramBridge.hapticNotification('success');

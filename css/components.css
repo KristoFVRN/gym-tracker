@@ -65,6 +65,45 @@
   gap: 8px;
 }
 
+.exercise-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-top-chip {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  transition: all 0.15s ease;
+}
+
+.btn-top-chip:active {
+  transform: scale(0.95);
+  background: var(--bg-card-hover);
+}
+
+.btn-plates-calc {
+  color: #ff9800;
+  border-color: rgba(255, 152, 0, 0.35);
+  background: rgba(255, 152, 0, 0.1);
+}
+
+.btn-copy-prev {
+  color: var(--accent-blue);
+  border-color: rgba(0, 176, 255, 0.35);
+  background: rgba(0, 176, 255, 0.1);
+}
+
 .exercise-title {
   font-size: 15px;
   font-weight: 700;
@@ -83,9 +122,9 @@
   background: rgba(255, 184, 0, 0.12);
   color: var(--accent-primary);
   border: 1px solid rgba(255, 184, 0, 0.25);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: var(--radius-full);
   cursor: pointer;
   white-space: nowrap;
@@ -257,10 +296,27 @@
   align-items: flex-start;
 }
 
+.set-index-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .set-index {
   font-size: 14px;
   font-weight: 800;
   color: var(--text-main);
+}
+
+.pr-badge-mini {
+  font-size: 9px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffd700, #ff9800);
+  color: #000000;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1.1;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
 }
 
 .set-type-tag {
@@ -282,7 +338,27 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  height: 42px;
+  height: 44px;
+}
+
+.stepper-center-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.set-hint-line {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-weight: 600;
+  white-space: nowrap;
+  margin-top: -4px;
+  margin-bottom: 2px;
+  letter-spacing: -0.2px;
 }
 
 .step-btn {
