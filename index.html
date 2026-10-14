@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Силовой Трекер | DDX & Matrix Workout</title>
+  <title>Силовой Трекер Full Body | DDX & Matrix</title>
 
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -24,11 +24,12 @@
        ====================================================================== -->
   <header class="app-header">
     <div class="header-top-row">
-      <div class="brand-badge">
+      <button type="button" class="brand-badge brand-badge-interactive" id="headerDaySelectorBtn" title="Выбрать тренировочный день">
         <span class="brand-dot"></span>
-        <span class="brand-name">Gym Pro Tracker</span>
-      </div>
+        <span class="brand-name" id="headerDayBadge">Фулбоди: День А ▾</span>
+      </button>
       <div class="header-actions-right">
+        <button type="button" class="btn-header-chip" id="btnHeaderPlans" title="Тренировочные планы">📋 Планы</button>
         <button type="button" class="btn-header-reset" id="headerResetBtn" title="Сбросить все подходы">↺ Сброс</button>
         <div class="user-name-tag" id="headerUserName">Атлет</div>
       </div>
@@ -56,7 +57,7 @@
        Контейнер тренировочных блоков
        ====================================================================== -->
   <main class="main-content" id="blocksContainer">
-    <!-- Блоки программы (1. Разминка, 2. Верх тела, 3. Низ тела, 4. Пресс) генерируются в app.js -->
+    <!-- Блоки программы генерируются в app.js -->
   </main>
 
   <!-- ======================================================================
@@ -80,7 +81,7 @@
   </footer>
 
   <!-- ======================================================================
-       Модальное окно таймера отдыха (Развернутое состояние / Bottom Sheet)
+       Модальное окно таймера отдыха (Bottom Sheet)
        ====================================================================== -->
   <div class="modal-overlay" id="restTimerModal">
     <div class="modal-sheet">
@@ -158,6 +159,121 @@
         </button>
         <button type="button" class="btn btn-reset-workout" id="resetWorkoutBtn">
           🔄 Начать новую тренировку
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       Модальное окно «Планы и дни Full Body»
+       ====================================================================== -->
+  <div class="modal-overlay" id="plansModal">
+    <div class="plans-modal-content">
+      <div class="modal-header-row">
+        <div>
+          <h3 class="modal-title">📋 Full Body Программы</h3>
+          <p class="modal-subtitle">Для атлетов до 3 лет стажа</p>
+        </div>
+        <button type="button" class="btn-close-x" id="plansModalClose">✕</button>
+      </div>
+
+      <div class="plans-list-container" id="plansListContainer">
+        <!-- Генерируется в app.js -->
+      </div>
+
+      <div class="plans-modal-footer">
+        <button type="button" class="btn btn-secondary btn-create-plan" id="btnCreateNewPlan">
+          ➕ Создать свой Full Body план
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       Модальное окно «Конструктор тренировки» (Builder)
+       ====================================================================== -->
+  <div class="modal-overlay" id="workoutBuilderModal">
+    <div class="builder-modal-content">
+      <div class="modal-header-row">
+        <div>
+          <h3 class="modal-title">🛠 Конструктор тренировки</h3>
+          <p class="modal-subtitle" id="builderDaySubtitle">Настройка упражнений дня</p>
+        </div>
+        <button type="button" class="btn-close-x" id="builderModalClose">✕</button>
+      </div>
+
+      <div class="builder-form-group">
+        <label class="builder-label">Название дня:</label>
+        <input type="text" id="builderDayTitleInput" class="builder-input" placeholder="Например: Фулбоди День А" />
+      </div>
+
+      <div class="builder-section-title">
+        <span>Упражнения дня:</span>
+        <button type="button" class="btn-chip-action" id="btnAddExerciseBtn">➕ Добавить</button>
+      </div>
+
+      <div class="builder-exercises-list" id="builderExercisesList">
+        <!-- Список упражнений дня с удалением и перемещением -->
+      </div>
+
+      <div class="builder-modal-footer">
+        <button type="button" class="btn btn-primary" id="btnSaveBuilderDay">💾 Сохранить тренировку</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       Модальное окно «Каталог упражнений» (Exercise Picker)
+       ====================================================================== -->
+  <div class="modal-overlay" id="exerciseCatalogModal">
+    <div class="catalog-modal-content">
+      <div class="modal-header-row">
+        <h3 class="modal-title">🏋️‍♂️ Выбор упражнения</h3>
+        <button type="button" class="btn-close-x" id="catalogModalClose">✕</button>
+      </div>
+
+      <!-- Вкладки фильтра по группам -->
+      <div class="catalog-category-tabs" id="catalogCategoryTabs">
+        <button type="button" class="catalog-tab-btn active" data-category="all">Все</button>
+        <button type="button" class="catalog-tab-btn" data-category="chest">Грудь</button>
+        <button type="button" class="catalog-tab-btn" data-category="back">Спина</button>
+        <button type="button" class="catalog-tab-btn" data-category="legs">Ноги</button>
+        <button type="button" class="catalog-tab-btn" data-category="shoulders">Плечи/Руки</button>
+        <button type="button" class="catalog-tab-btn" data-category="core">Пресс</button>
+        <button type="button" class="catalog-tab-btn" data-category="custom">✏️ Своё</button>
+      </div>
+
+      <!-- Сетка упражнений каталога -->
+      <div class="catalog-grid" id="catalogGrid">
+        <!-- Карточки упражнений генерируются в app.js -->
+      </div>
+
+      <!-- Панель создания своего упражнения -->
+      <div class="custom-exercise-panel" id="customExercisePanel" style="display: none;">
+        <div class="builder-form-group">
+          <label class="builder-label">Название упражнения:</label>
+          <input type="text" id="customExTitleInput" class="builder-input" placeholder="Например: Жим гантелей лёжа" />
+        </div>
+        <div class="builder-form-group">
+          <label class="builder-label">Оборудование / Тренажер:</label>
+          <input type="text" id="customExMachineInput" class="builder-input" placeholder="Например: Скамья + гантели" />
+        </div>
+        <div class="builder-form-group">
+          <label class="builder-label">Время отдыха:</label>
+          <select id="customExRestSelect" class="builder-select">
+            <option value="60">60 сек (Изоляция / Пресс)</option>
+            <option value="90" selected>90 сек (Стандартный)</option>
+            <option value="120">120 сек (Базовые)</option>
+            <option value="180">180 сек (Тяжелый присед/жим)</option>
+          </select>
+        </div>
+        <label class="custom-checkbox-row">
+          <input type="checkbox" id="customExBarbellCheck" />
+          <span class="custom-checkbox"></span>
+          <span>Упражнение со штангой (калькулятор блинов)</span>
+        </label>
+        <button type="button" class="btn btn-primary" id="btnCreateCustomExerciseSubmit">
+          ➕ Добавить упражнение в день
         </button>
       </div>
     </div>
