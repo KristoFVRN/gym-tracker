@@ -984,3 +984,40 @@
   gap: 4px;
 }
 
+.recommendations-banner {
+  background: linear-gradient(135deg, rgba(0, 230, 118, 0.12), rgba(0, 230, 118, 0.04));
+  border: 1px solid rgba(0, 230, 118, 0.3);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.rec-banner-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.rec-banner-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rec-banner-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #00e676;
+  letter-spacing: 0.3px;
+}
+
+.rec-banner-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.3;
+}
+
+

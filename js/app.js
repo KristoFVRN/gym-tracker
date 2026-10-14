@@ -64,7 +64,32 @@ function renderWorkoutApp() {
   });
 
   updateHeaderStats();
+  updateProgressionBanner();
 }
+
+function updateProgressionBanner() {
+  const banner = document.getElementById('recommendationsBanner');
+  const titleEl = document.getElementById('recBannerTitle');
+  const descEl = document.getElementById('recBannerDesc');
+  if (!banner) return;
+
+  const state = window.workoutState;
+  if (!state) return;
+
+  if (state.isBotRecsSource) {
+    banner.style.display = 'flex';
+    if (titleEl) titleEl.textContent = 'Веса рассчитаны ботом на прогрессию 🔥';
+    if (descEl) descEl.textContent = 'Персональный расчет Telegram бота (+2.5 кг к закрытым подходам)';
+  } else if (state.lastSessionData && state.lastSessionData.exercises) {
+    banner.style.display = 'flex';
+    const dateStr = state.lastSessionData.date || '13 октября';
+    if (titleEl) titleEl.textContent = 'Веса рассчитаны на основе тренировки #2 🔥';
+    if (descEl) descEl.textContent = `Анализ предыдущей тренировки (${dateStr}): авто-прогрессия +2.5 кг`;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
 
 /**
  * БЛОК 1: Кардио разминка

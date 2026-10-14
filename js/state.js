@@ -6,6 +6,87 @@ const STORAGE_KEY = 'tma_fitness_workout_state_v1';
 const TIMER_KEY = 'tma_fitness_start_time_v1';
 const LAST_SESSION_KEY = 'tma_fitness_last_session_v1';
 const PR_RECORDS_KEY = 'tma_fitness_personal_records_v1';
+const BOT_RECS_KEY = 'tma_fitness_bot_recs_v1';
+
+// Базовые данные тренировки #2 от 13 октября (гарантия работы даже до пересылки URL)
+const FALLBACK_INITIAL_SESSION = {
+  workoutId: 2,
+  date: '2026-10-13',
+  totalVolumeKg: 23201,
+  durationMinutes: 4,
+  exercises: [
+    {
+      id: 'bench_press_technogym',
+      title: 'Жим штанги лёжа',
+      sets: [
+        { setNum: 1, weight: 60, reps: 10 },
+        { setNum: 2, weight: 80, reps: 10 },
+        { setNum: 3, weight: 100, reps: 10 },
+        { setNum: 4, weight: 110, reps: 4 }
+      ]
+    },
+    {
+      id: 'lat_pulldown_matrix',
+      title: 'Вертикальная тяга в кроссовере',
+      sets: [
+        { setNum: 1, weight: 76, reps: 10 },
+        { setNum: 2, weight: 82, reps: 10 },
+        { setNum: 3, weight: 86, reps: 10 },
+        { setNum: 4, weight: 92, reps: 10 }
+      ]
+    },
+    {
+      id: 'chest_press_matrix',
+      title: 'Жим от груди в тренажере',
+      sets: [
+        { setNum: 1, weight: 76, reps: 11 },
+        { setNum: 2, weight: 76, reps: 11 },
+        { setNum: 3, weight: 76, reps: 11 },
+        { setNum: 4, weight: 76, reps: 11 }
+      ]
+    },
+    {
+      id: 'horizontal_row_block',
+      title: 'Горизонтальная тяга на спину (Вариант A)',
+      sets: [
+        { setNum: 1, weight: 72, reps: 20 },
+        { setNum: 2, weight: 72, reps: 20 },
+        { setNum: 3, weight: 72, reps: 20 },
+        { setNum: 4, weight: 72, reps: 20 }
+      ]
+    },
+    {
+      id: 'leg_extension_matrix',
+      title: 'Разгибание голени сидя',
+      sets: [
+        { setNum: 1, weight: 76, reps: 11 },
+        { setNum: 2, weight: 86, reps: 11 },
+        { setNum: 3, weight: 95, reps: 11 },
+        { setNum: 4, weight: 108, reps: 10 }
+      ]
+    },
+    {
+      id: 'leg_curl_technogym',
+      title: 'Сгибание голени сидя',
+      sets: [
+        { setNum: 1, weight: 42, reps: 10 },
+        { setNum: 2, weight: 47, reps: 10 },
+        { setNum: 3, weight: 52, reps: 10 },
+        { setNum: 4, weight: 66, reps: 10 }
+      ]
+    },
+    {
+      id: 'ab_crunch_panatta',
+      title: 'Скручивания на пресс',
+      sets: [
+        { setNum: 1, weight: 40, reps: 12 },
+        { setNum: 2, weight: 40, reps: 12 },
+        { setNum: 3, weight: 40, reps: 12 },
+        { setNum: 4, weight: 40, reps: 12 }
+      ]
+    }
+  ]
+};
 
 class WorkoutStateManager {
   constructor() {
@@ -15,6 +96,8 @@ class WorkoutStateManager {
     this.elapsedSeconds = 0;
     this.lastSessionData = null;
     this.personalRecords = {};
+    this.botRecommendations = null;
+    this.isBotRecsSource = false;
   }
 
   init() {
@@ -26,12 +109,56 @@ class WorkoutStateManager {
 
   loadHistoryAndPRs() {
     try {
+      this.parseUrlRecommendations();
+
       const lastRaw = localStorage.getItem(LAST_SESSION_KEY);
-      this.lastSessionData = lastRaw ? JSON.parse(lastRaw) : null;
+      if (lastRaw) {
+        this.lastSessionData = JSON.parse(lastRaw);
+      } else {
+        this.lastSessionData = FALLBACK_INITIAL_SESSION;
+        localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(FALLBACK_INITIAL_SESSION));
+      }
+
       const prRaw = localStorage.getItem(PR_RECORDS_KEY);
       this.personalRecords = prRaw ? JSON.parse(prRaw) : {};
     } catch (e) {
       console.warn('Failed to load history or PRs', e);
+      this.lastSessionData = FALLBACK_INITIAL_SESSION;
+    }
+  }
+
+  parseUrlRecommendations() {
+    try {
+      let b64Str = null;
+      if (typeof window !== 'undefined' && window.location) {
+        if (window.location.hash) {
+          const match = window.location.hash.match(/recs=([^&]+)/);
+          if (match) b64Str = match[1];
+        }
+        if (!b64Str && window.location.search) {
+          const params = new URLSearchParams(window.location.search);
+          b64Str = params.get('recs');
+        }
+      }
+
+      if (b64Str) {
+        const normalized = b64Str.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonStr = decodeURIComponent(escape(atob(normalized)));
+        const parsed = JSON.parse(jsonStr);
+        if (parsed && typeof parsed === 'object') {
+          this.botRecommendations = parsed;
+          this.isBotRecsSource = true;
+          localStorage.setItem(BOT_RECS_KEY, JSON.stringify(parsed));
+          return;
+        }
+      }
+
+      const cached = localStorage.getItem(BOT_RECS_KEY);
+      if (cached) {
+        this.botRecommendations = JSON.parse(cached);
+      }
+    } catch (e) {
+      console.warn('Could not parse recommendations from URL/storage', e);
     }
   }
 
@@ -108,6 +235,23 @@ class WorkoutStateManager {
 
   // Алгоритм умных рекомендаций прогрессии нагрузок
   getSmartRecommendation(exerciseId, setNum, defaultReps, defaultWeight, isBarbell = false) {
+    // 1. Проверяем расчет от Telegram бота
+    if (this.botRecommendations && this.botRecommendations[exerciseId]) {
+      const recSets = this.botRecommendations[exerciseId];
+      const sIdx = setNum - 1;
+      if (recSets[sIdx]) {
+        const [recW, recR, isProg] = recSets[sIdx];
+        return {
+          recommendedWeight: recW,
+          recommendedReps: recR,
+          isProgress: !!isProg,
+          badgeText: isProg ? '💡 +2.5 кг прогресс 🔥' : `💡 ${recW} кг (закрепление 💪)`,
+          tooltip: isProg ? 'Прогрессивная перегрузка от бота (+2.5 кг)' : 'Закрепление техники'
+        };
+      }
+    }
+
+    // 2. Расчет на основе сохраненной предыдущей тренировки
     const prev = this.getPreviousSet(exerciseId, setNum);
 
     // Случай 1: Первая тренировка (нет истории)
@@ -123,21 +267,12 @@ class WorkoutStateManager {
 
     const prevW = parseFloat(prev.weight) || defaultWeight;
     const prevR = parseInt(prev.reps, 10) || defaultReps;
-    const targetR = parseInt(defaultReps, 10) || 10;
+    // Для силовой программы фулбоди целевой диапазон гипертрофии 10 повт. (12 для пресса)
+    const targetR = (exerciseId === 'ab_crunch_panatta') ? 12 : 10;
 
     // Случай 2: Прошлый подход выполнен успешно (выполнены все целевые повторения)
     if (prevR >= targetR) {
-      let step = 2.5;
-      if (isBarbell) {
-        step = 2.5; // Базовые штанги прогрессируют шагом 2.5 кг
-      } else if (prevW >= 80) {
-        step = 2.5;
-      } else if (prevW >= 30) {
-        step = 2.5;
-      } else {
-        step = 1.0;
-      }
-
+      let step = (isBarbell || prevW >= 30) ? 2.5 : 1.0;
       const newWeight = Math.round((prevW + step) * 10) / 10;
 
       return {
@@ -158,6 +293,8 @@ class WorkoutStateManager {
       tooltip: `В прошлый раз было ${prevW} кг × ${prevR}. Закрепляем технику на ${targetR} повт.`
     };
   }
+
+
 
   // Получение данных сета с прошлой тренировки
   getPreviousSet(exerciseId, setNum) {
@@ -457,14 +594,18 @@ class WorkoutStateManager {
         totalSetsCount += totalExSets;
 
         const setsSummary = [];
+        const completedSets = [];
         ex.sets.forEach(s => {
           if (s.completed) {
             completedSetsCount++;
             exCompletedSets++;
-            const vol = Number(s.weight) * Number(s.reps);
+            const w = parseFloat(s.weight) || 0;
+            const r = parseInt(s.reps, 10) || 0;
+            const vol = w * r;
             exVolume += vol;
             totalVolumeKg += vol;
             setsSummary.push(`${s.weight} кг × ${s.reps}`);
+            completedSets.push({ setNum: s.setNum, weight: w, reps: r });
           }
         });
 
@@ -481,9 +622,11 @@ class WorkoutStateManager {
             completedSets: exCompletedSets,
             totalSets: totalExSets,
             setsSummary,
+            sets: completedSets,
             volume: exVolume
           });
         }
+
       }
     }
 
