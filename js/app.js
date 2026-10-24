@@ -691,10 +691,18 @@ function bindGlobalModals() {
   if (sendBotBtn) {
     sendBotBtn.addEventListener('click', () => {
       const summary = window.workoutState.calculateSummary();
+
+      if (!summary || summary.completedSetsCount === 0) {
+        alert('⚠️ Вы не отметили ни одного выполненного подхода!\n\nОтметьте выполненные сеты галочками перед отправкой отчета.');
+        window.TelegramBridge.hapticNotification('warning');
+        return;
+      }
+
+      const reportText = window.workoutState.formatReportText(summary);
       const payload = {
         action: 'workout_completed',
         summary,
-        reportText: window.workoutState.formatReportText(summary)
+        reportText
       };
 
       // Сохраняем сессию в локальную историю и обновляем рекорды (PR)
@@ -703,19 +711,25 @@ function bindGlobalModals() {
       const result = window.TelegramBridge.sendDataToBot(payload);
       window.TelegramBridge.hapticNotification('success');
 
-      // Сбрасываем тренировку для чистого нового сеанса
-      window.workoutState.resetState();
-      renderWorkoutApp();
-      updateHeaderStats();
-
       if (result.success && result.method === 'tg_sendData') {
-        alert('Данные успешно переданы в Telegram бот!');
+        // Сбрасываем тренировку только при успешной автоматической отправке в Telegram
+        window.workoutState.resetState();
+        renderWorkoutApp();
+        updateHeaderStats();
+
+        alert('✅ Данные успешно переданы в Telegram бот!');
         setTimeout(() => {
           window.TelegramBridge.closeApp();
         }, 300);
       } else {
-        alert('Отчет подготовлен! (В браузере вне Telegram WebApp данные скопированы в буфер обмена).');
-        navigator.clipboard?.writeText(JSON.stringify(payload, null, 2));
+        // Если sendData недоступен (например, открыто из инлайн-кнопки или вне Telegram)
+        navigator.clipboard?.writeText(reportText);
+
+        alert(
+          '⚠️ Telegram позволяет авто-отправку только если приложение открыто через большую кнопку «🏋️ Начать тренировку» внизу экрана чата.\n\n' +
+          '📋 Текст вашего отчета скопирован в буфер обмена!\n' +
+          'Просто отправьте его обычным сообщением в чат бота — он сразу зафиксирует тренировку и обновит прогрессию.'
+        );
       }
     });
   }
