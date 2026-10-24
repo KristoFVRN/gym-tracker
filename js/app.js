@@ -701,8 +701,7 @@ function bindGlobalModals() {
       const reportText = window.workoutState.formatReportText(summary);
       const payload = {
         action: 'workout_completed',
-        summary,
-        reportText
+        summary
       };
 
       // Сохраняем сессию в локальную историю и обновляем рекорды (PR)
